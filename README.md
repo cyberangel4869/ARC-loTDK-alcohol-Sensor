@@ -152,5 +152,28 @@ endif
 
 为了修复这一问题，需要手动传入OpenOCD的根目录。同时为了避免路径合成出错，直接指定为绝对路径，具体做法如下：
 * 首先需要确认OpenOCD相关文件的位置
+  * 先进入解压ARC GNU工具的目录:`cd ~/arc_gnu_2026.03_ide_linux_install/`，可用Tab键自动补全路径
+  * 然后寻找OpenOCD的位置：`find ./ -name "em.tcl"`
+    ```bash
+    cyberangel@cyberangel-B550M-GAMING-ARGB:~/arc_gnu_2026.03_ide_linux_install$ find ./ -name "em.tcl"
+    ./share/openocd/scripts/cpu/arc/em.tcl
+    ```
+  * `scripts`目录即为OpenOCD的根目录，最后需要用`pwd`指令获取根目录的绝对地址：
+    ```bash
+    cyberangel@cyberangel-B550M-GAMING-ARGB:~/arc_gnu_2026.03_ide_linux_install$ cd ./share/openocd/scripts/
+    cyberangel@cyberangel-B550M-GAMING-ARGB:~/arc_gnu_2026.03_ide_linux_install/share/openocd/scripts$ pwd
+    /home/cyberangel/arc_gnu_2026.03_ide_linux_install/share/openocd/scripts
+    ```
+* 然后就可以直接把绝对地址作为参数传递给`OPENOCD_OPTIONS`变量，从而保证后续的指令合成正确
+
+```makefile
+ifeq ($(VALID_JTAG), usb)
+# 工具链安装目录下的 openocd scripts 实际在 share/ 下，而非 bin/share/，此处直接指定绝对路径
+#DBG_HW_FLAGS += -ex "target remote | openocd --pipe $(OPENOCD_OPTIONS)" -ex "load"
+DBG_HW_FLAGS += -ex "target remote | openocd --pipe -s /home/cyberangel/arc_gnu_2026.03_ide_linux_install/share/openocd/scripts -f $(OPENOCD_CFG_FILE)" -ex "load"
+endif
+```
+完成上述所有操作后，就可以直接在工程目录下运行`make run`命令实现编译和烧录
+
 
 
