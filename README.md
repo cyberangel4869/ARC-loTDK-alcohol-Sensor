@@ -250,7 +250,7 @@ ps aux | grep openocd
 ```
 发现有残留进程直接杀掉
 ```bash
-sudo kill -9 <PID>
+sudo kill -9 <PID> #这里的PID需要替换为真实的进程编号
 ```
 或者直接
 ```bash
