@@ -8,6 +8,8 @@ Github Release页面：[ARC GNU 2026](https://github.com/foss-for-synopsys-dwc-a
 
 ## embARC OSP库函数
 
-这个库包含了所有ARC系列芯片和开发板的库函数和宏定义，其中包含大量的示例程序，以压缩包的形式放在`./embarc_osp.7z`中
+这个库包含了所有ARC系列芯片和开发板的库函数和宏定义，其中包含大量的示例程序
 
-解压后放在任意地址均可，但注意将自己的项目放在`embarc_osp/application`中，避免和官方的示例程序混在一起
+原始项目地址：[embarc_osp](https://github.com/foss-for-mips-arc-processors/embarc_osp)
+
+克隆到任意地址都可以正常使用，但需要将本项目放在`embarc_osp/application`中
