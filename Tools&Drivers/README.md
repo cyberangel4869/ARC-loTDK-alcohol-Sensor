@@ -42,3 +42,12 @@ sudo udevadm control --reload-rules
 djtgcfg enum
 ```
 如果识别到了设备，则驱动安装成功
+
+**NOTE：** 较新版本的Ubuntu系统与预编译的GDB包之间可能存在兼容性问题，解决方案如下：
+* 尝试运行`sudo apt install libncursesw5`来安装旧版的库
+* 若旧版库已经被移除，则需要通过软链接来把新版库接入GDB，运行下面的命令
+  ```bash
+  sudo ln -s /usr/lib/x86_64-linux-gnu/libncursesw.so.6 /usr/lib/x86_64-linux-gnu/libncursesw.so.5
+  sudo ln -s /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
+  ```
+  然后用`arc-elf32-gdb --version`验证GDB能否启动，若返回版本信息，则兼容性问题已解决
