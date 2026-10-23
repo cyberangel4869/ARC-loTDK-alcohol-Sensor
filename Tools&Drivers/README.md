@@ -22,4 +22,6 @@ IoTDK 板载的 FTDI 芯片通过 Digilent 的 JTAG-USB 协议与主机通信
 
 [Digilent 官方参考页](https://digilent.com/reference/software/adept/start)
 
+本项目使用的是x86-64的Ubuntu系统,`.deb`安装包放在本文件的同级目录
+
 Ubuntu 需要安装 Digilent Adept 的运行时库和 udev 规则，才能让普通用户（非 root）访问该设备
