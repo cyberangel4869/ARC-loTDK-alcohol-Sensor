@@ -28,4 +28,6 @@ cd embarc_osp
 * 从github的release界面下载linux系统的压缩包
 * 找到工具链的bin目录，加入系统的PATH环境变量
 * 通过`arc-elf32-gcc --version`指令检查环境变量是否配置成功，若返回ARC工具链版本则配置成功
+##### 3.Digilent Adept Runtime驱动程序
+IoTDK 板载的 FTDI 芯片通过 Digilent 的 JTAG-USB 协议与主机通信，Ubuntu 需要安装 Digilent Adept 的运行时库和 udev 规则，才能让普通用户（非 root）访问该设备。如果缺少它，`make run` 或 `make gui` 在尝试连接板子时会失败。安装后通常需要重新加载 udev 规则或重启系统。
 
