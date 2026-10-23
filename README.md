@@ -18,19 +18,9 @@ $$
 本项目采用embARC OSP和ARC GNU工具链
 * embARC OSP构建软件平台的框架和项目文件的框架，并负责调用其他工具链
 * ARC GNU专门用于编译嵌入式代码和调试
-### 工具链搭建命令
-##### 1.embARC OSP工具链下载
-```bash
-git clone https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_osp.git
-cd embarc_osp
-```
-##### 2.ARC GNU工具链下载
-* 从github的release界面下载linux系统的压缩包
-* 找到工具链的bin目录，加入系统的PATH环境变量
-* 通过`arc-elf32-gcc --version`指令检查环境变量是否配置成功，若返回ARC工具链版本则配置成功
-##### 3.Digilent Adept Runtime驱动程序
-IoTDK 板载的 FTDI 芯片通过 Digilent 的 JTAG-USB 协议与主机通信，Ubuntu 需要安装 Digilent Adept 的运行时库和 udev 规则，才能让普通用户（非 root）访问该设备。如果缺少它，`make run` 或 `make gui` 在尝试连接板子时会失败。安装后通常需要重新加载 udev 规则或重启系统。
-
+* Digilent Adept Runtime用于驱动IoTDK板载的JTAG芯片，实现程序烧录和调试的功能
+### 工具链搭建
+[工具链搭建指南](./Tools&Drivers/README.md)
 ## 项目说明
 ### 文件结构
 embARC OSP工具链的库函数和板级宏定义分散在整个工具根目录下的各个文件夹中，为了保证该项目的Cmake文件可以正确的识别并编译库函数头文件，必须保证文件结构的完整性,文件结构如下
