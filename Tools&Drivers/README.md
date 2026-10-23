@@ -2,7 +2,7 @@
 
 ## ARC GNU编译器
 
-Ubuntu系统的安装包位于`./arc_gnu_2026.03_ide_linux_install.tar.xz`
+[ARC GNU 1026](https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases)
 
 解压后需要添加`bin`目录的地址到系统的`PATH`环境变量
 
