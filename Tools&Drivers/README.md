@@ -2,7 +2,7 @@
 
 ## ARC GNU编译器
 
-[ARC GNU 1026](https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases)
+Github Release页面：[ARC GNU 2026](https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases)
 
 解压后需要添加`bin`目录的地址到系统的`PATH`环境变量
 
