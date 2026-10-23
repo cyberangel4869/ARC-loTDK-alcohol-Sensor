@@ -186,6 +186,55 @@ endif
 * 从模块的原理图可知，通过修改电阻焊接的位置可以修改`D/C`引脚的电平
 
 用万用表直接测量后发现，屏幕的15号引脚`D/C`通过10欧姆电阻拉低到GND，故I2C模式下的地址为`7'b011_1100`也就是`0x3C`
+#### U8G2库移植
+
+u8g2是应用最广泛的多平台OLED驱动库，它的标准库函数只提供了软件层，需要自行编写HAL硬件抽象层。
+
+具体做法是用ARC标准库中的I2C硬件通讯驱动函数重写u8g2库的字节通信回调函数（处理 I2C 数据传输），GPIO回调函数和延时回调函数（处理时序）：
+```c
+//u8x8.h头文件
+
+//通用函数指针原型
+typedef uint8_t (*u8x8_msg_cb)(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
+
+//字节通信回调函数指针与延时回调函数指针
+struct u8x8_struct
+{
+  const u8x8_display_info_t *display_info;
+  u8x8_char_cb next_cb; /*  procedure, which will be used to get the next char from the string */
+  u8x8_msg_cb display_cb;
+  u8x8_msg_cb cad_cb;
+  u8x8_msg_cb byte_cb;
+  u8x8_msg_cb gpio_and_delay_cb;
+  uint32_t bus_clock;	/* can be used by the byte function to store the clock speed of the bus */
+  const uint8_t *font;
+  uint16_t encoding;		/* encoding result for utf8 decoder in next_cb */
+  uint8_t x_offset;	/* copied from info struct, can be modified in flip mode */
+  uint8_t is_font_inverse_mode; 	/* 0: normal, 1: font glyphs are inverted */
+  uint8_t i2c_address;	/* a valid i2c adr. Initially this is 255, but this is set to something useful during DISPLAY_INIT */
+					/* i2c_address is the address for writing data to the display */
+					/* usually, the lowest bit must be zero for a valid address */
+  uint8_t i2c_started;	/* for i2c interface */
+  //uint8_t device_address;	/* OBSOLETE???? - this is the device address, replacement for U8X8_MSG_CAD_SET_DEVICE */
+  uint8_t utf8_state;		/* number of chars which are still to scan */
+  uint8_t gpio_result;	/* return value from the gpio call (only for MENU keys at the moment) */ 
+  uint8_t debounce_default_pin_state;
+  uint8_t debounce_last_pin_state;
+  uint8_t debounce_state;
+  uint8_t debounce_result_msg;	/* result msg or event after debounce */
+#ifdef U8X8_WITH_USER_PTR
+  void *user_ptr;
+#endif
+#ifdef U8X8_USE_PINS 
+  uint8_t pins[U8X8_PIN_CNT];	/* defines a pinlist: Mainly a list of pins for the Arduino Environment, use U8X8_PIN_xxx to access */
+#endif
+};
+```
+用ARC库重写这些标准函数后，将函数名传递给u8g2初始化函数，就能实现u8g2和HAL层的对接
+```c
+void u8g2_Setup_ssd1306_128x64_noname_f(u8g2_t *u8g2, const u8g2_cb_t *rotation, u8x8_msg_cb byte_cb, u8x8_msg_cb gpio_and_delay_cb);
+```
+
 
 
 
