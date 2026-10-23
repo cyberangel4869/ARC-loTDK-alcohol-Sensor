@@ -251,11 +251,12 @@ ps aux | grep openocd
 发现有残留进程直接杀掉
 ```bash
 sudo kill -9 <PID>
-# 或者直接
-sudo pkill -9 openocd
-# 再确认
-ps aux | grep openocd   # 应该没有输出了
 ```
+或者直接
+```bash
+sudo pkill -9 openocd
+```
+
 
 
 
