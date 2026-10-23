@@ -15,3 +15,11 @@ Github Release页面：[ARC GNU 2026](https://github.com/foss-for-synopsys-dwc-a
 代码压缩包地址：[embARC OSP压缩包](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_osp/releases)
 
 克隆到任意地址都可以正常使用，但需要将本项目放在`embarc_osp/application`中
+
+## Digilent Adept Runtime驱动
+
+IoTDK 板载的 FTDI 芯片通过 Digilent 的 JTAG-USB 协议与主机通信
+
+[Digilent 官方参考页](https://digilent.com/reference/software/adept/start)
+
+Ubuntu 需要安装 Digilent Adept 的运行时库和 udev 规则，才能让普通用户（非 root）访问该设备
