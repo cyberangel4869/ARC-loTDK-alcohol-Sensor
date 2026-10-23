@@ -234,7 +234,28 @@ struct u8x8_struct
 ```c
 void u8g2_Setup_ssd1306_128x64_noname_f(u8g2_t *u8g2, const u8g2_cb_t *rotation, u8x8_msg_cb byte_cb, u8x8_msg_cb gpio_and_delay_cb);
 ```
+## 程序烧录
+### 常见问题
+#### 3333端口被占用导致烧录失败
+OpenOCD进程需要手动结束，有可能出现旧的进程没有结束，占用通讯端口导致烧录失败的情况
 
+解决方法：先检查3333端口占用情况或直接查找openocd进程
+```bash
+# 查看谁占用了 3333 端口
+sudo lsof -i :3333
+# 或者
+sudo ss -tlnp | grep 3333
+# 或者直接找 openocd 进程
+ps aux | grep openocd
+```
+发现有残留进程直接杀掉
+```bash
+sudo kill -9 <PID>
+# 或者直接
+sudo pkill -9 openocd
+# 再确认
+ps aux | grep openocd   # 应该没有输出了
+```
 
 
 
