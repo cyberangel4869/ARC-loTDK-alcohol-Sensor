@@ -22,6 +22,23 @@ IoTDK 板载的 FTDI 芯片通过 Digilent 的 JTAG-USB 协议与主机通信
 
 [Digilent 官方参考页](https://digilent.com/reference/software/adept/start)
 
-本项目使用的是x86-64的Ubuntu系统，`.deb`安装包放在本文件的同级目录，用`sudo dpkg -i ./digilent.adept.runtime_2.30.1_amd64.deb`安装
+本项目使用的是x86-64的Ubuntu系统，安装包放在`./digilent.adept.runtime_2.30.1_amd64.deb`,安装命令
 
-Ubuntu 需要安装 Digilent Adept 的运行时库和 udev 规则，才能让普通用户（非 root）访问该设备
+```bash
+sudo dpkg -i ./digilent.adept.runtime_2.30.1_amd64.deb
+```
+
+为了可以用终端检查开发板上的JTAG芯片与PC的通讯是否正常，还需要安装Utilities软件，在上述官方网站的utilities分区可以下载安装包
+
+本项目使用的安装包放在`./digilent.adept.utilities_2.7.1-amd64.deb`，安装命令
+
+```bash
+sudo dpkg -i ./digilent.adept.utilities_2.7.1-amd64.deb
+sudo udevadm control --reload-rules
+```
+用USB数据线链接IoTDK开发板和PC，运行以下命令
+
+```bash
+djtgcfg enum
+```
+如果识别到了设备，则驱动安装成功
