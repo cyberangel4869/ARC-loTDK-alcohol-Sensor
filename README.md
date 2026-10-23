@@ -132,3 +132,25 @@ embARC OSP工具链的库函数和板级宏定义分散在整个工具根目录�
 └── Synopsys_FOSS_Notices_embARC.pdf
 ```
 本仓库的所有文件都应该放在`embarc_osp/application`中
+
+### OpenOCD相关配置文件修改
+OpenOCD在程序烧录中承担与板载芯片建立JTAG协议链接，响应GDB的load指令，并将ELF分段写入ARC芯片指定地址的关键作用
+
+较新版本的ARC GNU工具的文件结构发生改变，embARC OSP的配置文件中却还在用旧路径调用OpenOCD，这会使程序下载因无法调用OpenOCD组件而失败
+
+相关配置代码位于`embarc_osp/options/debug.mk`配置文件中，代码如下
+
+```makefile
+
+ifeq ($(VALID_JTAG), usb)
+DBG_HW_FLAGS += -ex "target remote | openocd --pipe $(OPENOCD_OPTIONS)" -ex "load"
+endif
+```
+问题根源在于 debug.mk 引用了一个 `OPENOCD_OPTIONS` 变量，该变量定义在 toolchain_gnu.mk 中，依然沿用旧的路径，路径多出了 `bin/`
+
+而`debug.mk`中的路径变量`DBG_HW_FLAGS`被用于合成调用OpenOCD的指令，它的错误会让所有相关指令都因找不到文件而报错，进而使得烧录程序崩溃退出
+
+为了修复这一问题，需要手动传入OpenOCD的根目录。同时为了避免路径合成出错，直接指定为绝对路径，具体做法如下：
+* 首先需要确认OpenOCD相关文件的位置
+
+
