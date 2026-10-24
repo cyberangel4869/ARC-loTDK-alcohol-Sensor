@@ -177,8 +177,7 @@ endif
 
 ## 软件编写
 ### OLED驱动
-#### 硬件部分
-##### OLED模块
+#### 硬件层：OLED模块
 * 主控芯片为SSD1780，采用I2C通讯模式
   * 依据芯片手册，Slave Address=`7'b011_110(SA0)`
   * I2C通讯模式下，引脚`D/C`充当I2C地址低位`SA0`
@@ -186,7 +185,7 @@ endif
 * 从模块的原理图可知，通过修改电阻焊接的位置可以修改`D/C`引脚的电平
 
 用万用表直接测量后发现，屏幕的15号引脚`D/C`通过10欧姆电阻拉低到GND，故I2C模式下的地址为`7'b011_1100`也就是`0x3C`
-#### U8G2库移植
+#### 软件层：U8G2开源库
 
 u8g2是应用最广泛的多平台OLED驱动库，它的标准库函数只提供了软件层，需要自行编写HAL硬件抽象层。
 
@@ -234,9 +233,63 @@ struct u8x8_struct
 ```c
 void u8g2_Setup_ssd1306_128x64_noname_f(u8g2_t *u8g2, const u8g2_cb_t *rotation, u8x8_msg_cb byte_cb, u8x8_msg_cb gpio_and_delay_cb);
 ```
-OLED的I2C数据结构和常见的芯片不同，它没有“寄存器”的概念，指令字节和数据字节必须在“START->DATA->STOP“中一次性传递，这和常见的“START->REGaddr->RESTART->DATA->STOP"结构有很大的不同，且需要较大的I2C数据缓冲区
+#### 硬件抽象层：HAL回调函数
+OLED的I2C数据结构和常见的芯片不同，它没有“寄存器”的概念，指令字节和数据字节必须在“START->DATA->STOP“中一次性传递，这和常见的“START->REGaddr->RESTART->DATA->STOP"结构有很大的不同，且需要较大的I2C数据缓冲区。u8g2库的软件层通过向回调函数传递变量`uint8_t msg`控制回调函数的行为，回调函数中需要将软件层的`msg`行为和ARC自带的I2C驱动相对应，保证软件层可以正常的实现OLED通讯时序。因此本项目直接在回调函数文件`application/alocholSensor/lib/u8g2_hal_rmbarc.h`中利用变量`static uint8_t buf[128]`手动创建了一块静态的内存空间充当I2C通讯的数据缓冲区
 
-ARC自带的HAL库函数并未提供这种特殊的I2C调度函数，需要利用I2C基础配置函数从新编写适配OLED通讯模式的u8g2回调函数
+u8g2的软件层在一次通讯中会先传入`MSG_BYTE_START_TRANSFR`指令开启通讯，然后多次传入`MSG_BYTE_SEND`指令并同时传入数据的指针，这些数据回先存入`buf`静态变量，最后在u8g2层传入`MSG_END_TRANSRF`结束通讯时调用ARC的`oled_iic->iic_write(uint_8,uint_8*)`函数一次性发送`buf`缓冲区中的所有数据，保证了通讯时许的正确
+
+```c
+// u8g2 HAL 回调
+uint8_t ARC_u8g2_HAL_msg_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
+{
+    uint8_t *data;
+    int32_t ercd;
+
+    switch (msg) {
+    case U8X8_MSG_BYTE_INIT:
+        // 首次通信前初始化 I2C0
+        if (oled_iic_init() != E_OK) return 0;
+        break;
+
+    case U8X8_MSG_BYTE_START_TRANSFER:
+        /* 设置从机地址 */
+        oled_iic->iic_control(IIC_CMD_MST_SET_TAR_ADDR, CONV2VOID(OLED_IIC_ADDR));
+        oled_iic->iic_control(IIC_CMD_MST_SET_NEXT_COND,CONV2VOID(IIC_MODE_STOP));
+        break;
+
+    case U8X8_MSG_BYTE_SEND:
+        data = (uint8_t *)arg_ptr;
+        if (buf_len + arg_int <= sizeof(buf)) {
+            memcpy(buf + buf_len, data, arg_int);
+            buf_len += arg_int;
+        }
+        break;
+
+    case U8X8_MSG_BYTE_END_TRANSFER:
+        if (buf_len > 0) {
+            ercd = oled_iic->iic_write(buf, buf_len);
+        if (ercd != buf_len) return 0;
+            buf_len = 0;
+        }
+        #ifdef DEBUG
+        EMBARC_PRINTF("TX len=%d: %02X %02X %02X %02X\r\n",
+              buf_len, buf[0], buf_len>1?buf[1]:0,
+              buf_len>2?buf[2]:0, buf_len>3?buf[3]:0);
+        #endif
+        break;
+
+    case U8X8_MSG_BYTE_SET_DC:
+        // I2C 接口没有 DC 引脚，忽略
+        break;
+
+    default:
+        // 其他 GPIO/延时消息在硬件 I2C 下通常不需要
+        return 1;
+    }
+
+    return 1;  // 成功
+}
+```
 ## 程序烧录
 ### 常见问题
 #### 3333端口被占用导致烧录失败
