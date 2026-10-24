@@ -31,6 +31,30 @@ $$
 
 embARC OSP工具链的库函数和板级宏定义分散在整个工具根目录下的各个文件夹中，为了保证该项目的Cmake文件可以正确的识别并编译库函数头文件，必须保证文件结构的完整性.本仓库的所有文件都应该放在`embarc_osp/application`中
 
+```bash
+embarc_osp/application/alcohonSensor/
+├── lib							#u8g2库函数
+│   ├── mui.c
+│   ├── mui.h
+│   ├── mui_u8g2.c
+│   ├── mui_u8g2.h
+│   ├── u8g2_xxx.c
+│   ├── u8x8_xxx.c
+│   └── u8g2_hal_rmbarc.h		#u8g2硬件抽象层回调函数
+├── makefile					#构建脚本
+├── obj_iotdk_10				#编译后输出的文件
+│   └── gnu_arcem9d
+│       ├── alcoholSensor_gnu_arcem9d.bin		#程序的二进制机器码文件
+│       ├── alcoholSensor_gnu_arcem9d.elf		#可执行可链接文件，用于调试
+│       ├── alcoholSensor_gnu_arcem9d.map		#内存映射文件
+│       ├── **									#中间文件和库函数文件编译结果
+│       └── **
+├── openocd.log
+├── README.md
+└── src
+    └── main.c
+```
+
 ### OpenOCD相关配置文件修改
 
 OpenOCD在程序烧录中承担与板载芯片建立JTAG协议链接，响应GDB的load指令，并将ELF分段写入ARC芯片指定地址的关键作用。较新版本的ARC GNU工具的文件结构发生改变，embARC OSP的配置文件中却还在用旧路径调用OpenOCD，这会使程序下载因无法调用OpenOCD组件而失败
