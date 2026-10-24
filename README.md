@@ -233,7 +233,77 @@ sudo kill -9 <PID> #这里的PID需要替换为真实的进程编号
 ```bash
 sudo pkill -9 openocd
 ```
+## 从SD卡运行程序
 
+ARC IoTDK芯片板载了两片2M大小的flash，flash0中预先写入了U-boot引导程序，可以用U-boot来从SD卡中启动程序
 
+#### SD卡必须先格式化为**FAT32**格式，二进制文件必须放在SD卡的根目录下
+
+用数据线连接板卡和Ubuntu电脑，linux系统都内置了串口终端，可以向ARC IoTDK输入U-boot指令
+```bash
+#查看JTAG调试器开放的USB端口号
+sudo /dev | grep USB
+#打开上面看到的端口
+sudo screen /dev/ttyUSB0 115200
+```
+按下板子的RESET按键，就能在终端里看到U-boot的提示符，如下：
+```bash
+U-Boot 2018.11-rc1-iotdk-1.0 (Oct 15 2018 - 09:57:14 +0200)
+
+CPU:   ARC EM9D at 144 MHz
+Board: Synopsys IoT Development Kit
+DRAM:  128 KiB
+MMC:   Synopsys Mobile storage: 0
+Loading Environment from FAT... *** Warning - bad CRC, using default environment
+
+In:    serial0@80014000
+Out:   serial0@80014000
+Err:   serial0@80014000
+IoTDK# 
+```
+用`fatls mmc 0`指令查看SD卡中的文件，确认芯片可以正常识别SD卡和卡上的文件后，将二进制文件读入内存并运行
+```
+IoTDK# fatls mmc 0
+    64540   boot.bin
+     4096   uboot.env.backup
+
+2 file(s), 0 dir(s)
+
+IoTDK# fatload mmc 0 0x20000000 boot.bin
+64540 bytes read in 23 ms (2.7 MiB/s)
+IoTDK# go 0x20000000
+```
+然后ARC芯片就会自动从`0x2000 0000`的地址处运行二进制程序，并显示LOGO
+```
+## Starting application at 0x20000000 ...
+-----------------------------------------------------------
+ ____                                _ ____
+|  _ \ _____      _____ _ __ ___  __| | __ ) _   _
+| |_) / _ \ \ /\ / / _ \ '__/ _ \/ _` |  _ \| | | |
+|  __/ (_) \ V  V /  __/ | |  __/ (_| | |_) | |_| |
+|_|   \___/ \_/\_/ \___|_|  \___|\__,_|____/ \__, |
+                                             |___/
+                     _       _    ____   ____   
+       ___ _ __ ___ | |__   / \  |  _ \ / ___|  
+      / _ \ '_ ` _ \| '_ \ / _ \ | |_) | |
+     |  __/ | | | | | |_) / ___ \|  _ <| |___   
+      \___|_| |_| |_|_.__/_/   \_\_| \_\\____|  
+------------------------------------------------------------
+
+embARC Build Time: Oct 24 2026, 18:07:41
+Compiler Version: ARC GNU, 15.2.0
+```
+## 上电自启动
+官方给的示例程序需要更新片上Flash中的U-boot，这样会破坏自带的启动引导文件，操作难度较大，且失败后难以恢复U-boot启动文件
+
+本项目采用U-boot自带的环境变量法，将上述的启动流程写入U-boot的环境变量，并通过U-boot指令将当前环境变量写入SD卡，全程无需修改U-boot本身，风险更加可控
+
+按下板子的RESET键，在U-boot终端的提示符号后面输入指令，将上面读文件到内存的操作写入环境变量，命令间用`\;`隔开
+```bash
+setenv bootcmd fatload mmc 0 0x20000000 boot.bin\; go 0x20000000
+```
+然后用指令`saveenv`将当前的环境变量保存进SD卡，完成后SD卡的根目录会出现一个`uboot.env`配置文件。再次RESET后芯片就会在上电后先倒计时几秒，然后自动运行SD卡根目录下的`boot.bin`文件
+
+完成设置后，只需要先`make bin`生成二进制文件，然后把生成的二进制文件复制到SD卡的根目录并重命名为`boot.bin`，这样芯片就可以在上电后自动执行程序
 
 
