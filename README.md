@@ -52,7 +52,8 @@ embarc_osp/application/alcohonSensor/
 ├── openocd.log
 ├── README.md
 └── src
-    └── main.c
+│   ├── INA226_i2c.h							#INA226驱动函数库
+    └── main.c									#主程序
 ```
 
 ### OpenOCD相关配置文件修改
@@ -98,7 +99,7 @@ endif
 
 ## 软件编写
 ### OLED驱动
-#### 硬件层：OLED模块
+#### 硬件层
 * 主控芯片为SSD1780，采用I2C通讯模式
   * 依据芯片手册，Slave Address=`7'b011_110(SA0)`
   * I2C通讯模式下，引脚`D/C`充当I2C地址低位`SA0`
@@ -106,9 +107,9 @@ endif
 * 从模块的原理图可知，通过修改电阻焊接的位置可以修改`D/C`引脚的电平
 
 用万用表直接测量后发现，屏幕的15号引脚`D/C`通过10欧姆电阻拉低到GND，故I2C模式下的地址为`7'b011_1100`也就是`0x3C`
-#### 软件层：U8G2开源库
+#### 软件层
 
-u8g2是应用最广泛的多平台OLED驱动库，它的标准库函数只提供了软件层，需要自行编写HAL硬件抽象层。
+采用u8g2库作为OLED驱动库。u8g2是应用最广泛的多平台OLED驱动库，它的标准库函数只提供了软件层，需要自行编写HAL硬件抽象层。
 
 具体做法是用ARC标准库中的I2C硬件通讯驱动函数重写u8g2库的字节通信回调函数（处理 I2C 数据传输），GPIO回调函数和延时回调函数（处理时序）：
 ```c
@@ -154,7 +155,7 @@ struct u8x8_struct
 ```c
 void u8g2_Setup_ssd1306_128x64_noname_f(u8g2_t *u8g2, const u8g2_cb_t *rotation, u8x8_msg_cb byte_cb, u8x8_msg_cb gpio_and_delay_cb);
 ```
-#### 硬件抽象层：HAL回调函数
+#### 硬件抽象层
 OLED的I2C数据结构和常见的芯片不同，它没有“寄存器”的概念，指令字节和数据字节必须在“START->DATA->STOP“中一次性传递，这和常见的“START->REGaddr->RESTART->DATA->STOP"结构有很大的不同，且需要较大的I2C数据缓冲区。u8g2库的软件层通过向回调函数传递变量`uint8_t msg`控制回调函数的行为，回调函数中需要将软件层的`msg`行为和ARC自带的I2C驱动相对应，保证软件层可以正常的实现OLED通讯时序。因此本项目直接在回调函数文件`application/alocholSensor/lib/u8g2_hal_rmbarc.h`中利用变量`static uint8_t buf[128]`手动创建了一块静态的内存空间充当I2C通讯的数据缓冲区
 
 u8g2的软件层在一次通讯中会先传入`MSG_BYTE_START_TRANSFR`指令开启通讯，然后多次传入`MSG_BYTE_SEND`指令并同时传入数据的指针，这些数据回先存入`buf`静态变量，最后在u8g2层传入`MSG_END_TRANSRF`结束通讯时调用ARC的`oled_iic->iic_write(uint_8,uint_8*)`函数一次性发送`buf`缓冲区中的所有数据，保证了通讯时许的正确
@@ -211,6 +212,21 @@ uint8_t ARC_u8g2_HAL_msg_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *ar
     return 1;  // 成功
 }
 ```
+
+### MQ-3酒精浓度传感器
+
+#### 硬件层
+
+板载的Arduino接口氧化严重，为了保证连接的可靠性，连接在I2C0总线上的INA226芯片作为ADC采样芯片。
+
+INA226内置了标准电压源，避免了电源波动带来的误差，且内部集成了16位ADC，精度足够。
+
+这里采用了本人之前参加嵌入式大赛时自制的INA226模块，它引出了所有的从机地址设置引脚，可以通过修改电阻的位置来改变INA226的从机地址，避免了和OLED的地址重合的可能
+
+#### 软件驱动层
+
+INA226用标准I2C协议通讯。根据芯片手册，只需要设置配置寄存器`0x00`将ADC测量模式设置为循环模式，并用轮询的方式查询电压寄存器`0x02`即可得到原始数据。将原始的16位数据乘1.25就是以mV为单位的电压值
+
 ## 程序烧录
 ### 常见问题
 #### 3333端口被占用导致烧录失败
