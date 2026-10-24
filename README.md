@@ -13,130 +13,27 @@ $$
 ### 0.96寸OLED屏幕
 ##### 驱动方式：硬件I2C总线
 * 移植开源的U8G2驱动库，将arduino框架下的I2C库函数替换为ARC的硬件I2C函数
+* 
 ## 工具链搭建
 ### 工具链框架
+
 本项目采用embARC OSP和ARC GNU工具链
 * embARC OSP构建软件平台的框架和项目文件的框架，并负责调用其他工具链
 * ARC GNU专门用于编译嵌入式代码和调试
 * Digilent Adept Runtime用于驱动IoTDK板载的JTAG芯片，实现程序烧录和调试的功能
 ### 工具链搭建
+
 [工具链搭建指南](./Tools&Drivers/README.md)
+
 ## 项目说明
+
 ### 文件结构
-embARC OSP工具链的库函数和板级宏定义分散在整个工具根目录下的各个文件夹中，为了保证该项目的Cmake文件可以正确的识别并编译库函数头文件，必须保证文件结构的完整性,文件结构如下
-```
-./embarc_osp/
-├── application
-│   └── alcoholSensor
-├── apply_embARC_patch.sh
-├── arc
-│   ├── arc_cache.c
-│   ├── arc_connect.c
-│   ├── arc_exc_asm.s
-│   ├── arc_exception.c
-│   ├── arc.mk
-│   ├── arc_mp.c
-│   ├── arc_mpu.c
-│   ├── arc_timer.c
-│   ├── arc_udma.c
-│   ├── arc_util.s
-│   └── startup
-├── board
-│   ├── axs
-│   ├── board.c
-│   ├── board.h
-│   ├── board.mk
-│   ├── emsdp
-│   ├── emsk
-│   ├── hsdk
-│   ├── iotdk
-│   └── nsim
-├── build
-│   ├── CMakeCache.txt
-│   ├── CMakeFiles
-│   ├── cmake_install.cmake
-│   ├── compile_commands.json
-│   ├── CPackConfig.cmake
-│   ├── CPackSourceConfig.cmake
-│   └── Makefile
-├── device
-│   ├── device.mk
-│   ├── ip
-│   └── peripheral
-├── doc
-│   ├── documents
-│   ├── embARC_Document.html
-│   ├── embARC.doxyfile
-│   └── Makefile
-├── example
-│   ├── baremetal
-│   ├── example.makefile
-│   ├── example.rst
-│   ├── examples.yaml
-│   ├── freertos
-│   ├── main.c.tmpl
-│   └── makefile
-├── include
-│   ├── arc
-│   ├── code_gen_macros.h
-│   ├── device
-│   ├── embARC_assert.h
-│   ├── embARC_debug.h
-│   ├── embARC_error.h
-│   ├── embARC.h
-│   ├── embARC_test.h
-│   └── embARC_toolchain.h
-├── library
-│   ├── clib
-│   ├── library.mk
-│   ├── mcuboot
-│   └── secureshield
-├── LICENSE
-├── middleware
-│   ├── aws
-│   ├── coap
-│   ├── common
-│   ├── fatfs
-│   ├── http_parser
-│   ├── ihex
-│   ├── lwip
-│   ├── lwip-contrib
-│   ├── mbedtls
-│   ├── middleware.mk
-│   ├── mqtt
-│   ├── ntshell
-│   ├── openthread
-│   ├── parson
-│   ├── u8glib
-│   └── wakaama
-├── options
-│   ├── debug.mk
-│   ├── files.mk
-│   ├── gmsl
-│   ├── options.mk
-│   ├── rules.mk
-│   ├── scripts.mk
-│   ├── toolchain
-│   └── toolchain.mk
-├── os
-│   ├── freertos
-│   ├── freertos.mk
-│   ├── hal
-│   └── os.mk
-├── README.md
-├── scripts
-│   ├── patch
-│   ├── requirements_doc.txt
-│   ├── requirements.txt
-│   └── test.py
-└── Synopsys_FOSS_Notices_embARC.pdf
-```
-本仓库的所有文件都应该放在`embarc_osp/application`中
+
+embARC OSP工具链的库函数和板级宏定义分散在整个工具根目录下的各个文件夹中，为了保证该项目的Cmake文件可以正确的识别并编译库函数头文件，必须保证文件结构的完整性.本仓库的所有文件都应该放在`embarc_osp/application`中
 
 ### OpenOCD相关配置文件修改
-OpenOCD在程序烧录中承担与板载芯片建立JTAG协议链接，响应GDB的load指令，并将ELF分段写入ARC芯片指定地址的关键作用
 
-较新版本的ARC GNU工具的文件结构发生改变，embARC OSP的配置文件中却还在用旧路径调用OpenOCD，这会使程序下载因无法调用OpenOCD组件而失败
+OpenOCD在程序烧录中承担与板载芯片建立JTAG协议链接，响应GDB的load指令，并将ELF分段写入ARC芯片指定地址的关键作用。较新版本的ARC GNU工具的文件结构发生改变，embARC OSP的配置文件中却还在用旧路径调用OpenOCD，这会使程序下载因无法调用OpenOCD组件而失败
 
 相关配置代码位于`embarc_osp/options/debug.mk`配置文件中，代码如下
 
