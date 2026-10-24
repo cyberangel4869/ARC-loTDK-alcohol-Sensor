@@ -234,6 +234,9 @@ struct u8x8_struct
 ```c
 void u8g2_Setup_ssd1306_128x64_noname_f(u8g2_t *u8g2, const u8g2_cb_t *rotation, u8x8_msg_cb byte_cb, u8x8_msg_cb gpio_and_delay_cb);
 ```
+OLED的I2C数据结构和常见的芯片不同，它没有“寄存器”的概念，指令字节和数据字节必须在“START->DATA->STOP“中一次性传递，这和常见的“START->REGaddr->RESTART->DATA->STOP"结构有很大的不同，且需要较大的I2C数据缓冲区
+
+ARC自带的HAL库函数并未提供这种特殊的I2C调度函数，需要利用I2C基础配置函数从新编写适配OLED通讯模式的u8g2回调函数
 ## 程序烧录
 ### 常见问题
 #### 3333端口被占用导致烧录失败
