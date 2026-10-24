@@ -64,11 +64,9 @@ uint8_t ARC_u8g2_HAL_msg_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *ar
         if (ercd != buf_len) return 0;
             buf_len = 0;
         }
-        #ifdef DEBUG
         EMBARC_PRINTF("TX len=%d: %02X %02X %02X %02X\r\n",
               buf_len, buf[0], buf_len>1?buf[1]:0,
               buf_len>2?buf[2]:0, buf_len>3?buf[3]:0);
-        #endif
         break;
 
     case U8X8_MSG_BYTE_SET_DC:
