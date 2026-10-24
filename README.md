@@ -217,7 +217,7 @@ uint8_t ARC_u8g2_HAL_msg_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *ar
 
 #### 硬件层
 
-板载的Arduino接口氧化严重，为了保证连接的可靠性，连接在I2C0总线上的INA226芯片作为ADC采样芯片。
+板载的Arduino接口氧化严重，为了保证连接的可靠性，用连接在I2C0总线上的INA226芯片作为ADC采样芯片。
 
 INA226内置了标准电压源，避免了电源波动带来的误差，且内部集成了16位ADC，精度足够。
 
