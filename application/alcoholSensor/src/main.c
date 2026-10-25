@@ -28,9 +28,19 @@
  *
    --------------------------------------------- */
 
+#include <stdio.h>
+
 #include "embARC.h"
 #include "embARC_debug.h"
 #include "u8g2_hal_embarc.h"
+#include "INA226_i2c.h"
+
+static u8g2_t u8g2;
+
+uint16_t ina226ID=0,vol_mV=0,ppm=0;
+static uint16_t standar=5000/720-1;
+
+char txt[32];
 
 
 /**
@@ -40,10 +50,9 @@
  
 int main(void)
 {
-
-	u8g2_t u8g2;
 	//初始化u8g2库，传入u8g2数据体，旋转配置和HAL硬件抽象层回调函数的指针
 	u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2,U8G2_R0,ARC_u8g2_HAL_msg_cb,ARC_u8g2_HAL_gpio_dely_cb);
+	ina226_init();
 	//通过I2C通讯复位OLED屏幕
 	u8g2_InitDisplay(&u8g2);
 	u8g2_ClearBuffer(&u8g2);
@@ -51,16 +60,19 @@ int main(void)
 	//唤醒屏幕
 	u8g2_SetPowerSave(&u8g2,0);
 	while (1) {
-        u8g2_ClearBuffer(&u8g2);
+		u8g2_ClearBuffer(&u8g2);
+		vol_mV=(int)ina226_read_bus_voltage();
+		ppm=20*standar*vol_mV/(5000-vol_mV);
 		u8g2_SetFont(&u8g2,u8g2_font_7x14B_tr);//设置字体
 		u8g2_SetFontMode(&u8g2,1);//采用透明字体
 		u8g2_SetDrawColor(&u8g2,2);//字体点阵通过XOR叠加到背景中
 		u8g2_DrawBox(&u8g2,0,0,128,15);//顶部填充页眉
-        u8g2_DrawStr(&u8g2,42, 13, "Alcohol");
-		u8g2_SetFont(&u8g2,u8g2_font_7x14_tr);
-		u8g2_DrawStr(&u8g2,30,30,"50 ppm");
+    	u8g2_DrawStr(&u8g2,42, 13, "Alcohol");
+		u8g2_SetFont(&u8g2,u8g2_font_10x20_tr);
+		snprintf(txt,sizeof(txt),"%d ppm",ppm);
+		u8g2_DrawStr(&u8g2,30,45,txt);
         u8g2_SendBuffer(&u8g2);
-        board_delay_ms(500,0);
+        board_delay_ms(100,0);
     }
 	
 }
