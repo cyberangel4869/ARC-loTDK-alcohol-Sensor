@@ -258,7 +258,7 @@ ARC IoTDK芯片板载了两片2M大小的flash，flash0中预先写入了U-boot�
 用数据线连接板卡和Ubuntu电脑，linux系统都内置了串口终端，可以向ARC IoTDK输入U-boot指令
 ```bash
 #查看JTAG调试器开放的USB端口号
-sudo /dev | grep USB
+sudo ls /dev | grep USB
 #打开上面看到的端口
 sudo screen /dev/ttyUSB0 115200
 ```
