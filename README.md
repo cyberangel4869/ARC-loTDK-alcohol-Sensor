@@ -68,34 +68,39 @@ ifeq ($(VALID_JTAG), usb)
 DBG_HW_FLAGS += -ex "target remote | openocd --pipe $(OPENOCD_OPTIONS)" -ex "load"
 endif
 ```
-问题根源在于 debug.mk 引用了一个 `OPENOCD_OPTIONS` 变量，该变量定义在 toolchain_gnu.mk 中，依然沿用旧的路径，路径多出了 `bin/`
-
-而`debug.mk`中的路径变量`DBG_HW_FLAGS`被用于合成调用OpenOCD的指令，它的错误会让所有相关指令都因找不到文件而报错，进而使得烧录程序崩溃退出
-
-为了修复这一问题，需要手动传入OpenOCD的根目录。同时为了避免路径合成出错，直接指定为绝对路径，具体做法如下：
-* 首先需要确认OpenOCD相关文件的位置
-  * 先进入解压ARC GNU工具的目录:`cd ~/arc_gnu_2026.03_ide_linux_install/`，可用Tab键自动补全路径
-  * 然后寻找OpenOCD的位置：`find ./ -name "em.tcl"`
-    ```bash
-    cyberangel@cyberangel-B550M-GAMING-ARGB:~/arc_gnu_2026.03_ide_linux_install$ find ./ -name "em.tcl"
-    ./share/openocd/scripts/cpu/arc/em.tcl
-    ```
-  * `scripts`目录即为OpenOCD的根目录，最后需要用`pwd`指令获取根目录的绝对地址：
-    ```bash
-    cyberangel@cyberangel-B550M-GAMING-ARGB:~/arc_gnu_2026.03_ide_linux_install$ cd ./share/openocd/scripts/
-    cyberangel@cyberangel-B550M-GAMING-ARGB:~/arc_gnu_2026.03_ide_linux_install/share/openocd/scripts$ pwd
-    /home/cyberangel/arc_gnu_2026.03_ide_linux_install/share/openocd/scripts
-    ```
-* 然后就可以直接把绝对地址作为参数传递给`OPENOCD_OPTIONS`变量，从而保证后续的指令合成正确
-
+问题根源在于 debug.mk 引用了一个 `OPENOCD_OPTIONS` 变量，该变量定义在 toolchain_gnu.mk 中，依然沿用旧的路径，路径多出了 `bin/`;而`debug.mk`中的路径变量`DBG_HW_FLAGS`被用于合成调用OpenOCD的指令，它的错误会让所有相关指令都因找不到文件而报错，进而使得烧录程序崩溃退出
 ```makefile
-ifeq ($(VALID_JTAG), usb)
-# 工具链安装目录下的 openocd scripts 实际在 share/ 下，而非 bin/share/，此处直接指定绝对路径
-#DBG_HW_FLAGS += -ex "target remote | openocd --pipe $(OPENOCD_OPTIONS)" -ex "load"
-DBG_HW_FLAGS += -ex "target remote | openocd --pipe -s /home/cyberangel/arc_gnu_2026.03_ide_linux_install/share/openocd/scripts -f $(OPENOCD_CFG_FILE)" -ex "load"
+OPENOCD_EXECUTABLE_ROOT = $(dir $(shell $(WHICH) openocd))   # → .../bin/
+OPENOCD_SCRIPT_ROOT = $(OPENOCD_EXECUTABLE_ROOT)/share/openocd/scripts  # → .../bin/share/... ✗
+```
+为了修复这一问题，且保证工程的可移植性，需要在配置文件中修改路径合成逻辑
+工具链实际布局是 `.../share/openocd/scripts`（少了 bin/..）。而 `board/board.mk` 里的 `OPENOCD_OPTIONS` 本来就是用 `$(OPENOCD_SCRIPT_ROOT)` 拼的。
+把 `toolchain_gnu.mk:159` 改成 `$(OPENOCD_EXECUTABLE_ROOT)/../share/openocd/scripts`实现路径合成时向上会退一级来越过`bin/`即可，修改后的代码如下
+`options/toolchain/toolchain_gnu.mk` — 注释原写法，新增回退一级的路径：
+```makefile
+else
+    # 原写法：$(OPENOCD_EXECUTABLE_ROOT) 是 openocd 所在的 bin/ 目录，
+    # 但 scripts 实际位于 <toolchain>/share/openocd/scripts，即需要先回退一级，
+    # 否则会拼成 <toolchain>/bin/share/openocd/scripts 而找不到脚本。
+    #OPENOCD_SCRIPT_ROOT = $(OPENOCD_EXECUTABLE_ROOT)/share/openocd/scripts
+    OPENOCD_SCRIPT_ROOT = $(OPENOCD_EXECUTABLE_ROOT)/../share/openocd/scripts
 endif
 ```
-完成上述所有操作后，就可以直接在工程目录下运行`make run`命令实现编译和烧录
+`options/debug.mk` — 注释掉写死绝对路径的那行，恢复使用 `$(OPENOCD_OPTIONS)`：
+```makefile
+ifeq ($(VALID_JTAG), usb)
+# 说明：openocd scripts 实际位于 <toolchain>/share/openocd/scripts 而非 bin/share/，
+# 已改为在 options/toolchain/toolchain_gnu.mk 中修正 OPENOCD_SCRIPT_ROOT，此处无需再写死绝对路径。
+# 以下为本机绝对路径写法，已废弃（换机器后路径失效）：
+#DBG_HW_FLAGS += -ex "target remote | openocd --pipe -s /home/cyberangel/.../share/openocd/scripts -f $(OPENOCD_CFG_FILE)" -ex "load"
+DBG_HW_FLAGS += -ex "target remote | openocd --pipe $(OPENOCD_OPTIONS)" -ex "load"
+endif
+```
+完成上述所有操作后，值令`cd application/alcoholSensor && make -n run` 干跑展开出的烧录命令为：
+```bash
+arc-elf32-gdb -ex "target remote | openocd --pipe -s /home/cyberangel/arc_gnu_2026.03_ide_linux_install/bin//../share/openocd/scripts -f ../../board/iotdk/configs/openocd/snps_iotdk.cfg" -ex "load" -ex "c" ...
+```
+合成的路径中会自动包含gnu工具链的实际路径，随后在项目文件夹中运行`make`,`make run`等指令时，脚本就能够自动合成gnu工具链的指令，而不用手动输入完整的指令。
 
 ## 软件编写
 ### OLED驱动
