@@ -68,7 +68,7 @@ ifeq ($(VALID_JTAG), usb)
 DBG_HW_FLAGS += -ex "target remote | openocd --pipe $(OPENOCD_OPTIONS)" -ex "load"
 endif
 ```
-问题根源在于 debug.mk 引用了一个 `OPENOCD_OPTIONS` 变量，该变量定义在 toolchain_gnu.mk 中，依然沿用旧的路径，路径多出了 `bin/`;而`debug.mk`中的路径变量`DBG_HW_FLAGS`被用于合成调用OpenOCD的指令，它的错误会让所有相关指令都因找不到文件而报错，进而使得烧录程序崩溃退出
+问题根源在于 debug.mk 引用了一个 `OPENOCD_OPTIONS` 变量，该变量定义在 `toolchain_gnu.mk` 中，依然沿用旧的路径，路径多出了 `bin/`;而`debug.mk`中的路径变量`DBG_HW_FLAGS`被用于合成调用OpenOCD的指令，它的错误会让所有相关指令都因找不到文件而报错，进而使得烧录程序崩溃退出
 ```makefile
 OPENOCD_EXECUTABLE_ROOT = $(dir $(shell $(WHICH) openocd))   # → .../bin/
 OPENOCD_SCRIPT_ROOT = $(OPENOCD_EXECUTABLE_ROOT)/share/openocd/scripts  # → .../bin/share/... ✗
